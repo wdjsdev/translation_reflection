@@ -12,6 +12,7 @@
 }*/
 
 #target Illustrator
+
 function doSomething()
 {
 	var valid = true;
@@ -27,44 +28,70 @@ function doSomething()
 	function getCenterPoint()
 	{
 		var result = [];
-		guidesLayer.locked = false;
-		guidesLayer.visible = true;
-		docRef.selection = null;
-		guidesLayer.hasSelectedArtwork = true;
-		app.executeMenuCommand("group");
-		var curGroup = docRef.selection[0];
-		result[0] = curGroup.left + curGroup.width/2;
-		result[1] = curGroup.top - curGroup.height/2;
-		app.executeMenuCommand("ungroup");
-		docRef.selection = null;
-		guidesLayer.locked = true;
+
+		var ab = docRef.artboards[0];
+		var rect = ab.artboardRect;
+		result[0] = rect[0] + (rect[2] - rect[0])/2;
+		result[1] = rect[1] - (rect[1] - rect[3])/2;
 		return result;
 	}
 
-	function translateArtwork(group,dir)
+	function translateArtwork(group, dir, lay)
 	{
+
 		var newGroup = group.duplicate();
-		app.redraw();
+
+		// app.redraw();
 		try
 		{
 			docRef.selection = null;
 		}
-		catch(e){}
+		catch (e)
+		{}
+
+		var offset,buffer;
 
 		newGroup.selected = true;
-		if(dir === "down")
+		if (dir === "down")
 		{
-			var offset = centerPoint[1] - (group.top - group.height);
-			newGroup.top = centerPoint[1] - offset;
+			buffer = newGroup.visibleBounds[1] - newGroup.top;
 			runAction(actionData.reflect_vert);
+			$.writeln("pause");
+			newGroup = lay.groupItems[0];
+			
+			$.writeln("vbuffer = " + buffer);
+			offset = measureOffset(newGroup);
+			
+			newGroup.top = (centerPoint[1] - offset[1]);
 		}
-		else if(dir === "right")
+		else if (dir === "right")
 		{
-			var offset = (group.left + group.width) - centerPoint[0];
-			newGroup.left = centerPoint[0] + offset;
+			buffer = newGroup.left - newGroup.visibleBounds[0];
 			runAction(actionData.reflect_horz);
+			$.writeln("pause");
+			newGroup = lay.groupItems[0];
+			
+			$.writeln("hbuffer = " + buffer);
+			offset = measureOffset(newGroup);
+			newGroup.left = centerPoint[0] + offset[0];
+			
 		}
- 
+
+	}
+
+	function measureOffset(group)
+	{
+		var top = group.visibleBounds[1];
+		var left = group.visibleBounds[0];
+		var width = group.visibleBounds[2] - left;
+		var height = top - group.visibleBounds[3];
+		var right = left + width;
+		var bottom = top - height;
+
+		var result = []; //element[0] = horizontal offset, element[1] = vertical offset
+		result[0] = centerPoint[0] - right;
+		result[1] = bottom - centerPoint[1];
+		return result;
 	}
 
 	function removeEffects(layer)
@@ -79,53 +106,53 @@ function doSomething()
 
 		var newLayer = layer.parent.layers.add();
 		newLayer.name = layer.name;
-		var item, itemDup,newGroup;
-		for(var i = layer.pageItems.length - 1; i>=0; i--)
+		var item, itemDup, newGroup;
+		for (var i = layer.pageItems.length - 1; i >= 0; i--)
 		{
 			item = layer.pageItems[i];
-			if(item.locked)
+			if (item.locked)
 			{
 				continue;
 			}
 
-			if(!newGroup)
+			if (!newGroup)
 			{
 				newGroup = newLayer.groupItems.add();
 			}
-			
+
 			itemDup = item.duplicate(newGroup);
 		}
-		layer.remove();
 		newLayer.zOrder(ZOrderMethod.SENDTOBACK);
 		newLayer.hasSelectedArtwork = true;
+		// layer.remove();
 		return newLayer;
 	}
 
 	function runAction(obj)
 	{
-		createAction(obj.name,obj.actionString);
-		app.doScript(obj.name,obj.name);
+		createAction(obj.name, obj.actionString);
+		app.doScript(obj.name, obj.name);
 		removeAction(obj.name);
 	}
 
 	//find a specific layer inside a given parent
 	//or return undefined;
-	function findSpecificLayer(parent,layerName)
+	function findSpecificLayer(parent, layerName)
 	{
-		var result,layers;
+		var result, layers;
 
-		if(parent.typename === "Layer" || parent.typename === "Document")
+		if (parent.typename === "Layer" || parent.typename === "Document")
 		{
-			layers = parent.layers;	
+			layers = parent.layers;
 		}
-		else if(parent.typename === "Layers")
+		else if (parent.typename === "Layers")
 		{
 			layers = parent;
 		}
-		
-		for(var x=0,len=layers.length;x<len && !result;x++)
+
+		for (var x = 0, len = layers.length; x < len && !result; x++)
 		{
-			if(layers[x].name.toLowerCase() === layerName.toLowerCase())
+			if (layers[x].name.toLowerCase() === layerName.toLowerCase())
 			{
 				result = layers[x];
 			}
@@ -134,15 +161,15 @@ function doSomething()
 	}
 
 	//create and load a new action
-	function createAction(name,actionString)
+	function createAction(name, actionString)
 	{
 		var dest = new Folder("~/Documents");
-		var actionFile = new File(dest + "/" + name + ".aia" );
+		var actionFile = new File(dest + "/" + name + ".aia");
 
 		actionFile.open("w");
 		actionFile.write(actionString.join("\n"));
 		actionFile.close();
-		
+
 		//load the action
 		app.loadAction(actionFile);
 	}
@@ -153,13 +180,13 @@ function doSomething()
 	{
 		var localValid = true;
 
-		while(localValid)
+		while (localValid)
 		{
 			try
 			{
-				app.unloadAction(actionName,"");
+				app.unloadAction(actionName, "");
 			}
-			catch(e)
+			catch (e)
 			{
 				localValid = false;
 			}
@@ -172,7 +199,6 @@ function doSomething()
 
 
 
-
 	var docRef = app.activeDocument;
 	var layers = docRef.layers;
 	var aB = docRef.artboards;
@@ -180,18 +206,16 @@ function doSomething()
 
 	var hudLayerName = "HUD";
 	var guidesLayerName = "Guides";
-	var hudLayer,targetLayer,guidesLayer;
+	var hudLayer, targetLayer, guidesLayer;
 
-	var myItem,newItem;
+	var myItem, newItem;
 
 
-	var actionData = 
-	{
+	var actionData = {
 		"reflect_vert":
 		{
-			name:"reflect_vert",
-			actionString:
-			[
+			name: "reflect_vert",
+			actionString: [
 				"/version 3",
 				"/name [ 12",
 				"	7265666c6563745f76657274",
@@ -236,9 +260,8 @@ function doSomething()
 		},
 		"reflect_horz":
 		{
-			name:"reflect_horz",
-			actionString:
-			[
+			name: "reflect_horz",
+			actionString: [
 				"/version 3",
 				"/name [ 12",
 				"	7265666c6563745f686f727a",
@@ -283,53 +306,52 @@ function doSomething()
 		}
 	}
 
-	var layerActions =
-	{
+	var layerActions = {
 		"[ O ]": function(lay)
 		{
 			myItem = lay.groupItems[0];
-			translateArtwork(myItem,"right");
+			translateArtwork(myItem, "right",lay);
 			lay.hasSelectedArtwork = true;
 			app.executeMenuCommand("group");
 			myItem = lay.groupItems[0];
-			translateArtwork(myItem,"down");
+			translateArtwork(myItem, "down",lay);
 			lay.hasSelectedArtwork = true;
 			app.executeMenuCommand("group");
-			lay.groupItems[0].name = "[ O ]";
+			lay.groupItems[0].name = lay.name;
 		},
-		"[ = ]":function(lay)
+		"[ = ]": function(lay)
 		{
 			myItem = lay.groupItems[0];
-			translateAtwork(myItem,"down");
+			translateAtwork(myItem, "down", lay);
 			lay.hasSelectedArtwork = true;
 			app.executeMenuCommand("group");
-			lay.groupItems[0].name = "[ = ]";
+			lay.groupItems[0].name = lay.name;
 		},
-		"<|>":function(lay)
+		"<|>": function(lay)
 		{
 			myItem = lay.groupItems[0];
-			translateArtwork(myItem,"right");
+			translateArtwork(myItem, "right", lay);
 			lay.hasSelectedArtwork = true;
 			app.executeMenuCommand("group");
-			lay.groupItems[0].name = "<|>";
+			lay.groupItems[0].name = lay.name;
 		}
 
 	}
-	
 
 
-	hudLayer = findSpecificLayer(layers,hudLayerName);
-	if(!hudLayer)
+
+	hudLayer = findSpecificLayer(layers, hudLayerName);
+	if (!hudLayer)
 	{
 		requiredLayerMissing(hudLayerName);
 		return false;
 	}
 
-	guidesLayer = findSpecificLayer(layers,guidesLayerName);
-	if(!guidesLayer)
+	guidesLayer = findSpecificLayer(layers, guidesLayerName);
+	if (!guidesLayer)
 	{
 		requiredLayerMissing(guidesLayerName);
-		return false;	
+		return false;
 	}
 
 
@@ -337,37 +359,41 @@ function doSomething()
 	//artwork across the central planes
 	var centerPoint = getCenterPoint();
 
+	// var crosshairs = docRef.groupItems["crosshairs"];
+	// var cw = crosshairs.visibleBounds[2] - crosshairs.visibleBounds[0];
+	// var ch = crosshairs.visibleBounds[1] - crosshairs.visibleBounds[3];
 
-	
-	var curLay;
-	for(var hl = hudLayer.layers.length - 1; hl>=0; hl--)
+	// crosshairs.left = centerPoint[0] - cw/2;
+	// crosshairs.top = centerPoint[1] + ch/2;
+
+	// return;
+
+	var curLay,layersToRemove = [];
+	// for (var hl = hudLayer.layers.length - 1; hl >= 0; hl--)
+	for(var hl = 0,len = hudLayer.layers.length;hl<len;hl++)
 	{
 		curLay = hudLayer.layers[hl];
-		if(!curLay.pageItems.length)
+		layersToRemove.push(curLay);
+		if (!curLay.pageItems.length)
 		{
 			continue;
 		}
-		try
+
+		targetLayer = removeEffects(curLay)
+		if(targetLayer.groupItems.length)
 		{
-			targetLayer = removeEffects(curLay)
 			layerActions[targetLayer.name](targetLayer);
 		}
-		catch(e)
-		{
-			// alert("hmmm....");
-		}
+
 		docRef.selection = null;
 	}
-	// targetLayer = removeEffects(targetLayer);
 
-
-	
-
-
-	
+	for(var rm = layersToRemove.length - 1; rm>=0; rm--)
+	{
+		layersToRemove[rm].remove();
+	}
 
 
 
-	
 }
 doSomething();

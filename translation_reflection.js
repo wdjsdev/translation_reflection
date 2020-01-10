@@ -1,3 +1,26 @@
+/*	
+	{
+		scriptName: "Reflect_And_Translate",
+		elegantScript: false,
+		functionalScript: true,
+		author: "William Dowling",
+		authorEmail: "illustrator.dev.pro@gmail.com",
+		steps: 
+			[
+				"Locate HUD layer and remove transformation effects from each sublayer",
+				"For each sublayer that has artwork: duplicate, reflect, and translate it to match the transformation effects that were removed",
+				"Delete unnecessary artwork and cleanup file"
+			],
+		disclaimer: "User assumes all responsibility for the execution of the script below. Please keep appropriate backups to avoid file loss or corruption!!",
+		version: "1.0",
+		funFact: "The average cumulus cloud weighs 1.1 million pounds (or 498951.607kg)",
+		sincereThought: "How on earth does it stay up there?!"
+	}
+*/
+
+
+//client's description and pseudo-code
+//around which the below script was based.
 /*if ("[ O ]"
 	layer exists)
 {
@@ -12,8 +35,7 @@
 }*/
 
 #target Illustrator
-
-function doSomething()
+function reflectAndTranslate()
 {
 	var valid = true;
 
@@ -41,8 +63,6 @@ function doSomething()
 
 		var newGroup = group.duplicate();
 		var bounds = newGroup.geometricBounds;
-
-		// app.redraw();
 		try
 		{
 			docRef.selection = null;
@@ -100,7 +120,7 @@ function doSomething()
 		for (var i = layer.pageItems.length - 1; i >= 0; i--)
 		{
 			item = layer.pageItems[i];
-			if (item.locked)
+			if (item.locked || item.hidden)
 			{
 				continue;
 			}
@@ -114,7 +134,6 @@ function doSomething()
 		}
 		newLayer.zOrder(ZOrderMethod.SENDTOBACK);
 		newLayer.hasSelectedArtwork = true;
-		// layer.remove();
 		return newLayer;
 	}
 
@@ -153,7 +172,15 @@ function doSomething()
 	//create and load a new action
 	function createAction(name, actionString)
 	{
-		var dest = new Folder("~/Documents");
+		var dest;
+		if($.os.match('Windows'))
+		{
+			dest = new Folder("C:\\Documents");
+		}
+		else
+		{
+			dest = new Folder("~/Documents");
+		}
 		var actionFile = new File(dest + "/" + name + ".aia");
 
 		actionFile.open("w");
@@ -188,6 +215,11 @@ function doSomething()
 	//
 
 
+	if(!app.documents.length)
+	{
+		alert("You must open an appropriate document first.");
+		return false;
+	}
 
 	var docRef = app.activeDocument;
 	var layers = docRef.layers;
@@ -195,8 +227,7 @@ function doSomething()
 	var swatches = docRef.swatches;
 
 	var hudLayerName = "HUD";
-	var guidesLayerName = "Guides";
-	var hudLayer, targetLayer, guidesLayer;
+	var hudLayer, targetLayer;
 
 	var myItem, newItem;
 
@@ -312,7 +343,7 @@ function doSomething()
 		"[ = ]": function(lay)
 		{
 			myItem = lay.groupItems[0];
-			translateAtwork(myItem, "down", lay);
+			translateArtwork(myItem, "down", lay);
 			lay.hasSelectedArtwork = true;
 			app.executeMenuCommand("group");
 			lay.groupItems[0].name = lay.name;
@@ -329,18 +360,12 @@ function doSomething()
 	}
 
 
-
+	//
+	//Find t
 	hudLayer = findSpecificLayer(layers, hudLayerName);
 	if (!hudLayer)
 	{
 		requiredLayerMissing(hudLayerName);
-		return false;
-	}
-
-	guidesLayer = findSpecificLayer(layers, guidesLayerName);
-	if (!guidesLayer)
-	{
-		requiredLayerMissing(guidesLayerName);
 		return false;
 	}
 
@@ -375,4 +400,4 @@ function doSomething()
 
 
 }
-doSomething();
+reflectAndTranslate();

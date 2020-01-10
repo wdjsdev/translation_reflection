@@ -40,6 +40,7 @@ function doSomething()
 	{
 
 		var newGroup = group.duplicate();
+		var bounds = newGroup.geometricBounds;
 
 		// app.redraw();
 		try
@@ -54,26 +55,20 @@ function doSomething()
 		newGroup.selected = true;
 		if (dir === "down")
 		{
-			buffer = newGroup.visibleBounds[1] - newGroup.top;
 			runAction(actionData.reflect_vert);
-			$.writeln("pause");
 			newGroup = lay.groupItems[0];
-			
-			$.writeln("vbuffer = " + buffer);
+			buffer = newGroup.top - bounds[1];
 			offset = measureOffset(newGroup);
-			
-			newGroup.top = (centerPoint[1] - offset[1]);
+			newGroup.top = (centerPoint[1] - offset[1]) + buffer;
 		}
 		else if (dir === "right")
 		{
-			buffer = newGroup.left - newGroup.visibleBounds[0];
 			runAction(actionData.reflect_horz);
-			$.writeln("pause");
 			newGroup = lay.groupItems[0];
-			
-			$.writeln("hbuffer = " + buffer);
+
+			buffer = bounds[0] - newGroup.left;
 			offset = measureOffset(newGroup);
-			newGroup.left = centerPoint[0] + offset[0];
+			newGroup.left = centerPoint[0] + offset[0] - buffer;
 			
 		}
 
@@ -81,16 +76,11 @@ function doSomething()
 
 	function measureOffset(group)
 	{
-		var top = group.visibleBounds[1];
-		var left = group.visibleBounds[0];
-		var width = group.visibleBounds[2] - left;
-		var height = top - group.visibleBounds[3];
-		var right = left + width;
-		var bottom = top - height;
-
 		var result = []; //element[0] = horizontal offset, element[1] = vertical offset
-		result[0] = centerPoint[0] - right;
-		result[1] = bottom - centerPoint[1];
+		var bounds = group.geometricBounds;
+
+		result[0] = centerPoint[0] - bounds[2];
+		result[1] = bounds[3] - centerPoint[1];
 		return result;
 	}
 
@@ -359,17 +349,7 @@ function doSomething()
 	//artwork across the central planes
 	var centerPoint = getCenterPoint();
 
-	// var crosshairs = docRef.groupItems["crosshairs"];
-	// var cw = crosshairs.visibleBounds[2] - crosshairs.visibleBounds[0];
-	// var ch = crosshairs.visibleBounds[1] - crosshairs.visibleBounds[3];
-
-	// crosshairs.left = centerPoint[0] - cw/2;
-	// crosshairs.top = centerPoint[1] + ch/2;
-
-	// return;
-
 	var curLay,layersToRemove = [];
-	// for (var hl = hudLayer.layers.length - 1; hl >= 0; hl--)
 	for(var hl = 0,len = hudLayer.layers.length;hl<len;hl++)
 	{
 		curLay = hudLayer.layers[hl];
@@ -392,7 +372,6 @@ function doSomething()
 	{
 		layersToRemove[rm].remove();
 	}
-
 
 
 }

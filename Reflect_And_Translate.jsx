@@ -206,7 +206,7 @@ function reflectAndTranslate()
 		var dest;
 		if($.os.match('Windows'))
 		{
-			dest = new Folder("C:\\Documents");
+			dest = new Folder(ACTION_FILE_PATH);
 		}
 		else
 		{
@@ -217,6 +217,12 @@ function reflectAndTranslate()
 		actionFile.open("w");
 		actionFile.write(actionString.join("\n"));
 		actionFile.close();
+
+		if(!actionFile.exists)
+		{
+			alert("Failed to save the action: " + name + " in the location:\n" + dest.fsName + ".");
+			valid = false;
+		}
 
 		//load the action
 		app.loadAction(actionFile);

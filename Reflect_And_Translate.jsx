@@ -51,6 +51,15 @@ function reflectAndTranslate()
 	const ACTION_FILE_PATH = "C:\\4B\\Temp";
 
 
+
+
+
+
+
+
+
+
+
 	function isExpired()
 	{
 		var exp = 1579200866035;
@@ -70,6 +79,15 @@ function reflectAndTranslate()
 		return valid;
 	}
 
+
+
+
+
+
+
+
+
+
 	//
 	//logic container
 
@@ -87,42 +105,6 @@ function reflectAndTranslate()
 		result[0] = rect[0] + (rect[2] - rect[0])/2;
 		result[1] = rect[1] - (rect[1] - rect[3])/2;
 		return result;
-	}
-
-	function translateArtwork(group, dir, lay)
-	{
-
-		var newGroup = group.duplicate();
-		var bounds = newGroup.geometricBounds;
-		try
-		{
-			docRef.selection = null;
-		}
-		catch (e)
-		{}
-
-		var offset,buffer;
-
-		newGroup.selected = true;
-		if (dir === "down")
-		{
-			runAction(actionData.reflect_vert);
-			newGroup = lay.groupItems[0];
-			buffer = newGroup.top - bounds[1];
-			offset = measureOffset(newGroup);
-			newGroup.top = (centerPoint[1] - offset[1]) + buffer;
-		}
-		else if (dir === "right")
-		{
-			runAction(actionData.reflect_horz);
-			newGroup = lay.groupItems[0];
-
-			buffer = bounds[0] - newGroup.left;
-			offset = measureOffset(newGroup);
-			newGroup.left = centerPoint[0] + offset[0] - buffer;
-			
-		}
-
 	}
 
 	function measureOffset(group)
@@ -171,8 +153,10 @@ function reflectAndTranslate()
 	function runAction(obj)
 	{
 		createAction(obj.name, obj.actionString);
+		if(!valid)return;
 		app.doScript(obj.name, obj.name);
 		removeAction(obj.name);
+		return true;
 	}
 
 	//find a specific layer inside a given parent
@@ -248,16 +232,107 @@ function reflectAndTranslate()
 	}
 
 
+
+
+
+
+	function translateArtwork(group, dir, lay)
+	{
+
+		var newGroup = group.duplicate();
+		newGroup.name = "Group";
+		var bounds = newGroup.geometricBounds;
+		try
+		{
+			docRef.selection = null;
+		}
+		catch (e)
+		{}
+
+		var offset,buffer;
+
+		newGroup.selected = true;
+		if (dir === "down")
+		{
+			if(runAction(actionData.reflect_vert))
+			{
+				newGroup = lay.groupItems[0];
+				buffer = newGroup.top - bounds[1];
+				offset = measureOffset(newGroup);
+				newGroup.top = (centerPoint[1] - offset[1]) + buffer;
+			}
+		}
+		else 
+		{
+			if(runAction(actionData.reflect_horz))              
+			{
+				newGroup = lay.groupItems[0];
+				buffer = bounds[0] - newGroup.left;
+				offset = measureOffset(newGroup);
+
+				if(dir === "right")
+				{
+					newGroup.left = centerPoint[0] + offset[0] - buffer;
+				}
+				else if (dir === "left")
+				{
+					newGroup.left = centerPoint[0] - offset[0] - buffer;
+				}
+
+				// if(dir === "right")
+				// {
+				// 	newGroup.left = centerPoint[0] + offset[0] - buffer;
+				// }
+				// else if (dir === "left")
+				// {
+				// 	newGroup.left = 
+				// }
+			}
+		}
+		newGroup.moveToBeginning(containerGroup);
+	}
+
+
 	//logic container
 	//
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//Check for document
 	if(!app.documents.length)
 	{
 		alert("You must open an appropriate document first.");
 		return false;
 	}
 
+	//global variables
 	var docRef = app.activeDocument;
 	var layers = docRef.layers;
 	var aB = docRef.artboards;
@@ -266,7 +341,7 @@ function reflectAndTranslate()
 	var hudLayerName = "HUD";
 	var hudLayer, targetLayer;
 
-	var myItem, newItem;
+	var myItem, newItem, parentGroup,containerGroup;
 
 
 	var actionData = {
@@ -368,13 +443,18 @@ function reflectAndTranslate()
 		"[ O ]": function(lay)
 		{
 			myItem = lay.groupItems[0];
+			myItem.name = "parent";
+			containerGroup = lay.groupItems.add();
+			containerGroup.zOrder(ZOrderMethod.SENDTOBACK);
+			containerGroup.name = "[ O ]";
+
 			translateArtwork(myItem, "right",lay);
-			lay.hasSelectedArtwork = true;
-			app.executeMenuCommand("group");
-			myItem = lay.groupItems[0];
+			myItem = containerGroup.groupItems[0];
+			myItem.moveToBeginning(containerGroup);
+
 			translateArtwork(myItem, "down",lay);
-			lay.hasSelectedArtwork = true;
-			app.executeMenuCommand("group");
+			myItem = containerGroup.pageItems[0];
+			translateArtwork(myItem,"left",lay);
 			lay.groupItems[0].name = lay.name;
 		},
 		"[ = ]": function(lay)

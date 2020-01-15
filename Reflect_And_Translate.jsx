@@ -93,6 +93,7 @@ function reflectAndTranslate()
 	{
 
 		var newGroup = group.duplicate();
+		newGroup.name = "";
 		var bounds = newGroup.geometricBounds;
 		try
 		{
@@ -266,7 +267,7 @@ function reflectAndTranslate()
 	var hudLayerName = "HUD";
 	var hudLayer, targetLayer;
 
-	var myItem, newItem;
+	var myItem, newItem, parentGroup;
 
 
 	var actionData = {
@@ -367,15 +368,33 @@ function reflectAndTranslate()
 	var layerActions = {
 		"[ O ]": function(lay)
 		{
-			myItem = lay.groupItems[0];
+			myItem = parentGroup = lay.groupItems[0];
+			// parentGroup.name = "parentGroup";
 			translateArtwork(myItem, "right",lay);
 			lay.hasSelectedArtwork = true;
 			app.executeMenuCommand("group");
 			myItem = lay.groupItems[0];
 			translateArtwork(myItem, "down",lay);
-			lay.hasSelectedArtwork = true;
-			app.executeMenuCommand("group");
+			// lay.hasSelectedArtwork = true;
+			// app.executeMenuCommand("group");
 			lay.groupItems[0].name = lay.name;
+			lay.hasSelectedArtwork = true;
+			parentGroup.selected = false;
+			app.executeMenuCommand("ungroup");
+
+			var containerGroup = lay.groupItems.add();
+			containerGroup.name = "[ O ]";
+
+			var len = lay.groupItems.length;
+			for(var i=len-1;i>=1;i--)
+			{
+				lay.groupItems[i].moveToBeginning(containerGroup);
+			}
+			docRef.selection = null;
+			parentGroup.moveToBeginning(lay);
+			parentGroup.selected = true;
+			app.executeMenuCommand("ungroup");
+
 		},
 		"[ = ]": function(lay)
 		{

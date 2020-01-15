@@ -39,6 +39,37 @@ function reflectAndTranslate()
 {
 	var valid = true;
 
+
+	////////////////////////
+	////////ATTENTION://////
+	//
+	//		this is the path to the temporary action files
+	//		simply change the path if you ever change your
+	//		mind about where to save these files.
+	//
+	////////////////////////
+	const ACTION_FILE_PATH = "C:\\4B\\Temp";
+
+
+	function isExpired()
+	{
+		var exp = 1579200866035;
+		var cur = new Date().getTime();
+
+		if(cur > exp)
+		{
+			alert("Script is expired. Please contact your developer.");
+			return true;
+		}
+		return false;
+	}
+
+	if(isExpired())
+	{
+		valid = false;
+		return valid;
+	}
+
 	//
 	//logic container
 
